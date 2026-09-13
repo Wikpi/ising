@@ -2,13 +2,13 @@ import random as rng
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
+import os
 
-n: int = 200
+n: int = 100
 
-J: float = 1
-T: float = 1
+T_red: float = 10.0
 
-k: int = 1E20
+k: int = int(1E5)
 
 def main() -> None:
     rng.seed(0)
@@ -16,17 +16,20 @@ def main() -> None:
     configuration: list = generate_initial_configuration(n)
 
     fig, ax = plt.subplots()
-    image = ax.imshow(configuration, cmap='viridis', vmin=-1, vmax=1)
+    image = ax.imshow(configuration, cmap="gray", vmin=-1, vmax=1)
 
-    for x in range(int(k)):
+    for x in range(k + 1):
         configuration = MH(configuration, n)
 
         image.set_data(configuration)
 
-        ax.set_title(f'{n}x{n} lattice simulation number = {x}') 
+        ax.set_title(f"{n}x{n} lattice computation = {x}") 
         
         plt.draw()
-        plt.pause(1E-100)
+        # plt.pause(1/(n * k))
+
+    save_figure(f"{n}x{n}-lattice-computation-T_red-{T_red}-runs-{k}", "data")
+    plt.show()
 
     return
 
@@ -50,7 +53,7 @@ def generate_initial_configuration(n: int, random: bool = False) -> list:
 
 def update_configuration(configuration: list, index: int, n: int) -> list:
     # Create a new copy for the updated configuration.
-    new_configuration: list = configuration.copy()
+    new_configuration: list = [x[:] for x in configuration]
     
     x, y = get_spin_coordinates(index, n)
 
@@ -60,9 +63,7 @@ def update_configuration(configuration: list, index: int, n: int) -> list:
     return new_configuration
 
 def MH(configuration: list, n: int) -> list:
-    N = n * n
-    
-    i = rng.randint(0, N - 1)
+    i = rng.randint(0, n * n - 1)
 
     updated_configuration: list = update_configuration(configuration, i, n)
 
@@ -70,7 +71,7 @@ def MH(configuration: list, n: int) -> list:
     if delta_E <= 0:
         return updated_configuration
     
-    R = rng.randrange(0, 2)
+    R = rng.uniform(0, 1)
     p = get_boltzman_probability(delta_E)
 
     if R < p:
@@ -88,7 +89,7 @@ def calculate_energy_change(configuration: list, i: int, n: int) -> float:
     spin_4 = get_spin(configuration, i + n, n)
 
     # Calculate the energy change of the system due to flipping the selected spin.
-    return -J * spin_i * (spin_1 + spin_2 + spin_3 + spin_4)
+    return -spin_i * (spin_1 + spin_2 + spin_3 + spin_4)
 
 def get_spin_coordinates(index: int, n: int):
     # The size of the 2D-matrix.
@@ -111,6 +112,14 @@ def get_spin(configuration: list, index: int, n) -> int:
     return configuration[x][y]
 
 def get_boltzman_probability(E: float) -> float:
-    return np.exp(-E/(sp.constants.k * T))
+    return np.exp(-E/T_red)
+
+def save_figure(filename: str = "simulation-result", output_dir: str = "data") -> None:
+    # Ensure that the output directory is always present relative to the current working directory.
+    os.makedirs(output_dir, exist_ok=True)
+
+    path = os.path.join(output_dir, "%s.png" % filename)
+
+    plt.savefig(path)
 
 main()
