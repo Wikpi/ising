@@ -1,5 +1,6 @@
 import random as rng
 import numpy as np
+import scipy as sp
 import matplotlib.pyplot as plt
 import os
 
@@ -9,47 +10,52 @@ n: int = 50
 k: int = 10
 
 equilibrium_iterations: int = 500
-measure_iterations: int = 10
+measure_iterations: int = 100
 
 # T_red domain.
-T_red_min: float = 0.1
-T_red_max: float = 10.0
-T_red_N: int = 30
+T_min: float = 0.1
+T_max: float = 273
+T_n: int = 50
+
+J_min: float = 1e-22
+J_max: float = 1e-21
+J_n: int = 50
+
 
 def main() -> None:
     rng.seed(0)
 
-    T_red: np.ndarray = np.linspace(T_red_min, T_red_max, T_red_N)
-    m_average: np.ndarray = np.zeros(T_red_N)
+    T: np.ndarray = np.linspace(T_min, T_max, T_n)
+    J: np.ndarray = np.linspace(J_min, J_max, J_n)
+    
+    T_red: np.ndarray = sp.constants.k * T / J
+
+    m_sim: np.ndarray = np.zeros_like(T_red)
 
     for i in range(len(T_red)):
         configuration: list = generate_initial_configuration(n)
 
         configuration = MH(configuration, equilibrium_iterations, T_red[i])
 
-        m_average[i] = get_average_magnetization(configuration, k, T_red[i])
+        m_sim[i] = get_average_magnetization(configuration, k, T_red[i])
     
     T_c_theory: float = 2 / np.log(1 + np.sqrt(2))
-    # T_c_sim: float = approximate_critical_temperature()
+    T_c_sim: float = 0#approximate_critical_temperature()
 
-    m_theory: np.ndarray = np.zeros(T_red_N)
+    m_theory: np.ndarray = np.zeros_like(T_red)
     m_theory[T_red < T_c_theory] = (1 - np.sinh(2 / T_red[T_red < T_c_theory]) ** (-4)) ** (1/8)
 
-    plt.xlabel("$T_{red}$") 
-    plt.ylabel("|m|")
-    plt.title("Ising model")
+    plot_figure(
+        [
+            [T_red, m_sim],
+            [T_red, m_theory],
+        ],
+        [
+            T_c_sim, 
+            T_c_theory,
+        ],
+    )
 
-    plt.plot(T_red, m_average, label="Simulation", color="blue")
-    plt.plot(T_red, m_theory, label="Theoretical", color="orange")
-
-    # plt.axvline(T_c_sim, linestyle="-.", label="Extimated $T_c$", color="purple")
-    plt.axvline(T_c_theory, linestyle="--", label="Theoretical $T_c$", color="red")
-
-    plt.legend()
-
-    save_figure(f"{n}x{n}-lattice-{k}_samples-{equilibrium_iterations}_equilibrium-{measure_iterations}_measure")
-
-    plt.show()
 
 def get_configuration_mean(configuration: list) -> float:
     mean: float = 0
@@ -60,6 +66,7 @@ def get_configuration_mean(configuration: list) -> float:
         mean += sum(configuration[i])
     
     return mean / (n * n)
+
 
 def generate_initial_configuration(n: int, random: bool = False) -> list:
     # Initialize the configuration of the system as a 2D-matrix of spins.
@@ -78,6 +85,7 @@ def generate_initial_configuration(n: int, random: bool = False) -> list:
             new_configuration[i].append(spin)
     
     return new_configuration
+
 
 def MH(configuration: list, iterations: int, T: float) -> list:
     n: int = len(configuration)
@@ -101,6 +109,7 @@ def MH(configuration: list, iterations: int, T: float) -> list:
         
     return configuration
 
+
 def calculate_energy_change(configuration: list, i: int, n: int) -> float:
     x, y = get_spin_coordinates(i, n)
 
@@ -112,6 +121,7 @@ def calculate_energy_change(configuration: list, i: int, n: int) -> float:
 
     # Calculate the energy change of the system due to flipping the selected spin.
     return -2 * configuration[x][y] * (spin_up + spin_down + spin_left + spin_right)
+
 
 def get_spin_coordinates(index: int, n: int):
     # The size of the 2D-matrix.
@@ -127,8 +137,10 @@ def get_spin_coordinates(index: int, n: int):
 
     return x, y
 
+
 def get_boltzman_probability(E: float, T: float) -> float:
     return np.exp(-E/T)
+
 
 def get_average_magnetization(configuration: list, samples: int, T) -> float:
     n: int = len(configuration)
@@ -142,6 +154,7 @@ def get_average_magnetization(configuration: list, samples: int, T) -> float:
         
     return m_average / samples
 
+
 def approximate_critical_temperature() -> float:
     dm_dT = np.diff(m_average) / np.diff(T_red)
 
@@ -152,6 +165,28 @@ def approximate_critical_temperature() -> float:
 
     return T_c
 
+
+def plot_figure(m_list: list, T_c_list: list) -> None:
+    m_sim_points, m_theory_points = m_list
+
+    plt.plot(m_sim_points[0], m_sim_points[1], label="Simulation", color="blue")
+    plt.plot(m_theory_points[0], m_theory_points[1], label="Theoretical", color="orange")
+
+    T_c_sim, T_c_theory = T_c_list
+
+    # plt.axvline(T_c_sim, linestyle="-.", label="Extimated $T_c$", color="purple")
+    plt.axvline(T_c_theory, linestyle="--", label="Theoretical $T_c$", color="red")
+
+    plt.legend()
+    plt.xlabel("$T_{red}$") 
+    plt.ylabel("|m|")
+    plt.title("Ising model")
+
+    save_figure(f"{n}x{n}-lattice-{k}_samples-{equilibrium_iterations}_equilibrium-{measure_iterations}_measure")
+
+    plt.show()
+
+
 def save_figure(filename: str = "simulation-result", output_dir: str = "data") -> None:
     # Ensure that the output directory is always present relative to the current working directory.
     os.makedirs(output_dir, exist_ok=True)
@@ -160,4 +195,6 @@ def save_figure(filename: str = "simulation-result", output_dir: str = "data") -
 
     plt.savefig(path)
 
-main()
+
+if __name__ == "__main__":
+    main()

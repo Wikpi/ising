@@ -10,6 +10,7 @@ T_red: float = 10.0
 
 k: int = int(1E5)
 
+
 def main() -> None:
     rng.seed(0)
 
@@ -33,6 +34,7 @@ def main() -> None:
 
     return
 
+
 def generate_initial_configuration(n: int, random: bool = False) -> list:
     # Initialize the configuration of the system as a 2D-matrix of spins.
     new_configuration: list = []
@@ -51,6 +53,7 @@ def generate_initial_configuration(n: int, random: bool = False) -> list:
     
     return new_configuration
 
+
 def update_configuration(configuration: list, index: int, n: int) -> list:
     # Create a new copy for the updated configuration.
     new_configuration: list = [x[:] for x in configuration]
@@ -61,6 +64,7 @@ def update_configuration(configuration: list, index: int, n: int) -> list:
     new_configuration[x][y] *= -1
 
     return new_configuration
+
 
 def MH(configuration: list, n: int) -> list:
     i = rng.randint(0, n * n - 1)
@@ -78,6 +82,7 @@ def MH(configuration: list, n: int) -> list:
         return updated_configuration
     return configuration
 
+
 def calculate_energy_change(configuration: list, i: int, n: int) -> float:
     # Get the value of the selected spin.
     spin_i = get_spin(configuration, i, n)
@@ -90,6 +95,7 @@ def calculate_energy_change(configuration: list, i: int, n: int) -> float:
 
     # Calculate the energy change of the system due to flipping the selected spin.
     return -spin_i * (spin_1 + spin_2 + spin_3 + spin_4)
+
 
 def get_spin_coordinates(index: int, n: int):
     # The size of the 2D-matrix.
@@ -106,13 +112,16 @@ def get_spin_coordinates(index: int, n: int):
 
     return x, y
 
+
 def get_spin(configuration: list, index: int, n) -> int:
     x, y = get_spin_coordinates(index, n)
 
     return configuration[x][y]
 
+
 def get_boltzman_probability(E: float) -> float:
     return np.exp(-E/T_red)
+
 
 def save_figure(filename: str = "simulation-result", output_dir: str = "data") -> None:
     # Ensure that the output directory is always present relative to the current working directory.
@@ -122,4 +131,6 @@ def save_figure(filename: str = "simulation-result", output_dir: str = "data") -
 
     plt.savefig(path)
 
-main()
+
+if __name__ == "__main__":
+    main()
