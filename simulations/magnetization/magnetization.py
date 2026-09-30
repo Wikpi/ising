@@ -9,7 +9,7 @@ n: int = 50
 # Sample size.
 k: int = 10
 
-equilibrium_iterations: int = 500
+equilibrium_iterations: int = 200
 measure_iterations: int = 100
 
 # T_red domain.
@@ -37,7 +37,7 @@ def main() -> None:
 
         configuration = MH(configuration, equilibrium_iterations, T_red[i])
 
-        m_sim[i] = get_average_magnetization(configuration, k, T_red[i])
+        m_sim[i] = abs(get_average_magnetization(configuration, k, T_red[i]))
     
     T_c_theory: float = 2 / np.log(1 + np.sqrt(2))
     T_c_sim: float = 0#approximate_critical_temperature()

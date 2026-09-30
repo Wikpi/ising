@@ -9,7 +9,7 @@ n: int = 20
 # Sample size.
 k: int = 10
 
-equilibrium_iterations: int = 500
+equilibrium_iterations: int = 200
 measure_iterations: int = 100
 
 # T_red domain.
@@ -40,7 +40,7 @@ def main() -> None:
 
             configuration = MH(configuration, equilibrium_iterations, T_red[i][j])
 
-            m[i][j] = get_average_magnetization(configuration, k, T_red[i][j])
+            m[i][j] = abs(get_average_magnetization(configuration, k, T_red[i][j]))
 
     T_c = 2 * J / (sp.constants.k * np.log(1 + np.sqrt(2)))
 
